@@ -1,0 +1,13 @@
+{
+  "name": "kolejowy-bot",
+  "version": "1.0.0",
+  "description": "Bot Discord o tematyce kolei",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.6.1"
+  }
+}
