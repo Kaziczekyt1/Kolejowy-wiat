@@ -1,36 +1,47 @@
-require("dotenv").config();
-const { Client, GatewayIntentBits } = require("discord.js");
+// --- PORT BINDING (dla Render) ---
+const express = require("express");
+const app = express();
 
+const PORT = process.env.PORT || 3000;
+app.get("/", (req, res) => res.send("✅ Bot działa 24/7!"));
+app.listen(PORT, () => console.log(`🌐 Serwer HTTP uruchomiony na porcie ${PORT}`));
+
+// --- BOT DISCORDA ---
+const { Client, GatewayIntentBits } = require("discord.js");
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
+
+const TOKEN = "TWÓJ_TOKEN_BOTA";
+
+// Mapa: kanał -> treść wiadomości
+const CHANNEL_MESSAGES = {
+  "1404221189198446784": "🚧 Aktualizacja: prowadzone są prace konserwacyjne na sieci kolejowej.",
+  "1404220512712003644": "📰 Nowości: pojawiły się świeże informacje ze świata kolei.",
+  "1404221112736284732": "🚂 Ciekawostka: lokomotywy odgrywają kluczową rolę w transporcie towarowym i pasażerskim.",
+  "1404221151433064498": "🚆 Informacja: nowe połączenia pociągów regionalnych zostały uruchomione."
+};
 
 client.once("ready", () => {
-  console.log(`✅ Zalogowano jako ${client.user.tag}`);
-});
+  console.log(`✅ Bot jest online jako ${client.user.tag}`);
 
-// Funkcja do wysyłania wiadomości
-async function sendMessage(channelId, message) {
-  try {
-    const channel = await client.channels.fetch(channelId);
+  // Od razu po starcie wyśle wiadomość na każdy kanał
+  for (const [channelId, message] of Object.entries(CHANNEL_MESSAGES)) {
+    const channel = client.channels.cache.get(channelId);
     if (channel) {
-      await channel.send(message);
-      console.log(`📨 Wysłano do ${channelId}: ${message}`);
+      channel.send("🤖 Bot wystartował i będzie publikował wiadomości co 10 minut!");
     }
-  } catch (err) {
-    console.error("Błąd przy wysyłaniu wiadomości:", err);
   }
-}
 
-// Automatyczne wiadomości (co 1h = 3600000 ms)
-client.on("ready", () => {
+  // Co 10 minut wysyła przypisane wiadomości na kanały
   setInterval(() => {
-    // przykładowe wiadomości dla kanałów
-    sendMessage("1404221151433064498", "🚆 Tory kolejowe przechodzą dzisiaj konserwację w kilku regionach.");
-    sendMessage("1404221189198446784", "🔧 Aktualizacja: Prowadzone są prace naprawcze na linii Warszawa – Gdańsk.");
-    sendMessage("1404220512712003644", "📰 Nowość: PKP Intercity zapowiedziało nowe wagony sypialne.");
-    sendMessage("1404221112736284732", "🚂 Dzisiejsza ciekawostka: EU07 to jedna z najpopularniejszych lokomotyw w Polsce.");
-  }, 3600000); // co 1h
+    for (const [channelId, message] of Object.entries(CHANNEL_MESSAGES)) {
+      const channel = client.channels.cache.get(channelId);
+      if (channel) {
+        channel.send(message);
+      }
+    }
+  }, 10 * 60 * 1000);
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(TOKEN);
