@@ -97,4 +97,5 @@ client.once("ready", () => {
   setInterval(fetchNews, 10 * 60 * 1000); // co 10 minut
 });
 
-client.login(token);
+client.login(process.env.TOKEN);
+
