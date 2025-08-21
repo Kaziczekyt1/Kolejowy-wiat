@@ -1,69 +1,78 @@
-const { Client, GatewayIntentBits } = require("discord.js");
 require("dotenv").config();
+const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 const express = require("express");
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
-// 🔹 PROSTY SERWER EXPRESS dla Render
+// === Serwer Express, żeby Render widział PORT ===
 const app = express();
-app.get("/", (req, res) => res.send("✅ Bot działa!"));
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🌐 Serwer wystartował na porcie ${PORT}`));
+app.get("/", (req, res) => res.send("Bot działa!"));
+app.listen(PORT, () => console.log(`Serwer nasłuchuje na porcie ${PORT}`));
 
+// === Po zalogowaniu ===
 client.once("ready", () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
-  client.user.setPresence({
-    activities: [{ name: "Kolejowy Świat 🚂", type: 0 }],
-    status: "online"
-  });
+
+  setInterval(() => {
+    // TORy I SIECI
+    const channelTory = client.channels.cache.get("1404221151433064498");
+    if (channelTory) {
+      const embed = new EmbedBuilder()
+        .setColor("Blue")
+        .setTitle("🚧 Tory i sieci trakcyjne")
+        .setDescription(
+          "Aktualizacja prac torowych i modernizacji sieci trakcyjnej. Sprawdź więcej informacji poniżej."
+        )
+        .setURL("https://www.plk-sa.pl/aktualnosci")
+        .setFooter({ text: "Źródło: PKP PLK" });
+      channelTory.send({ embeds: [embed] });
+    }
+
+    // NAPRAWY I KONSERWACJE
+    const channelNaprawy = client.channels.cache.get("1404221189198446784");
+    if (channelNaprawy) {
+      const embed = new EmbedBuilder()
+        .setColor("Orange")
+        .setTitle("🔧 Naprawy i konserwacje")
+        .setDescription(
+          "Planowane i bieżące prace konserwacyjne na liniach kolejowych. Zobacz szczegóły."
+        )
+        .setURL("https://portalpasazera.pl")
+        .setFooter({ text: "Źródło: Portal Pasażera" });
+      channelNaprawy.send({ embeds: [embed] });
+    }
+    // NOWOŚCI KOLEJOWE
+    const channelNowosci = client.channels.cache.get("1404220512712003644");
+    if (channelNowosci) {
+      const embed = new EmbedBuilder()
+        .setColor("Green")
+        .setTitle("📰 Nowości kolejowe")
+        .setDescription(
+          "Najnowsze wydarzenia ze świata kolei – inwestycje, przetargi i ciekawostki."
+        )
+        .setURL("https://www.rynek-kolejowy.pl")
+        .setFooter({ text: "Źródło: Rynek Kolejowy" });
+      channelNowosci.send({ embeds: [embed] });
+    }
+
+    // LOKOMOTYWY I POCIĄGI
+    const channelLokomotywy = client.channels.cache.get("1404221112736284732");
+    if (channelLokomotywy) {
+      const embed = new EmbedBuilder()
+        .setColor("Red")
+        .setTitle("🚂 Lokomotywy i pociągi")
+        .setDescription(
+          "Nowinki o lokomotywach i składach pasażerskich. Kliknij poniżej, by dowiedzieć się więcej."
+        )
+        .setURL("https://kurierkolejowy.eu")
+        .setFooter({ text: "Źródło: Kurier Kolejowy" });
+      channelLokomotywy.send({ embeds: [embed] });
+    }
+  }, 10 * 60 * 1000); // co 10 minut
 });
 
-// INTERWAŁ – co 10 minut różne wiadomości
-setInterval(() => {
-  // TORY I SIECI
-  const channelTory = client.channels.cache.get("1404221151433064498");
-  if (channelTory) {
-    channelTory.send(
-      "🚧 Aktualizacja torów i sieci trakcyjnej!\nSprawdź szczegóły tutaj: https://www.plk-sa.pl/dla-podroznych"
-    );
-  }
-
-  // NAPRAWY I KONSERWACJE
-  const channelNaprawy = client.channels.cache.get("1404221189198446784");
-  if (channelNaprawy) {
-    channelNaprawy.send(
-      "🔧 Planowane naprawy i konserwacje – bieżący harmonogram: https://www.plk-sa.pl/utrzymanie"
-    );
-  }
-
-  // NOWOŚCI KOLEJOWE
-  const channelNowosci = client.channels.cache.get("1404220512712003644");
-  if (channelNowosci) {
-    channelNowosci.send(
-      "📰 Nowości kolejowe! Zobacz najświeższe informacje: https://kurierkolejowy.eu"
-    );
-  }
-
-  // LOKOMOTYWY I POCIĄGI
-  const channelLokomotywy = client.channels.cache.get("1404221112736284732");
-  if (channelLokomotywy) {
-    channelLokomotywy.send(
-      "🚂 Ciekawostki o lokomotywach i pociągach!\nZdjęcia i artykuły: https://kolejnapolska.pl"
-    );
-  }
-}, 10 * 60 * 1000); // co 10 minut
-
-// PROSTA KOMENDA
-client.on("messageCreate", (message) => {
-  if (message.content === "!ping") {
-    message.reply("Pong! 🚂");
-  }
-});
-
+// === TOKEN z pliku .env ===
 client.login(process.env.TOKEN);
