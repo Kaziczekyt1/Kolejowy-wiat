@@ -44,4 +44,4 @@ client.once("ready", () => {
   }, 10 * 60 * 1000);
 });
 
-client.login(TOKEN);
+client.login(process.env.TOKEN);
