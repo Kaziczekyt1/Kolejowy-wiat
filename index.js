@@ -12,7 +12,7 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 });
 
-const TOKEN = "TWÓJ_TOKEN_BOTA";
+client.login(process.env.TOKEN);
 
 // Mapa: kanał -> treść wiadomości
 const CHANNEL_MESSAGES = {
