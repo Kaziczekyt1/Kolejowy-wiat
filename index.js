@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 require("dotenv").config();
+const express = require("express");
 
 const client = new Client({
   intents: [
@@ -9,6 +10,12 @@ const client = new Client({
   ]
 });
 
+// 🔹 PROSTY SERWER EXPRESS dla Render
+const app = express();
+app.get("/", (req, res) => res.send("✅ Bot działa!"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🌐 Serwer wystartował na porcie ${PORT}`));
+
 client.once("ready", () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
   client.user.setPresence({
@@ -17,7 +24,7 @@ client.once("ready", () => {
   });
 });
 
-// INTERWAŁ – co 10 minut różne wiadomości do różnych kanałów
+// INTERWAŁ – co 10 minut różne wiadomości
 setInterval(() => {
   // TORY I SIECI
   const channelTory = client.channels.cache.get("1404221151433064498");
