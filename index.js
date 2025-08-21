@@ -1,47 +1,62 @@
-// --- PORT BINDING (dla Render) ---
-const express = require("express");
-const app = express();
-
-const PORT = process.env.PORT || 3000;
-app.get("/", (req, res) => res.send("✅ Bot działa 24/7!"));
-app.listen(PORT, () => console.log(`🌐 Serwer HTTP uruchomiony na porcie ${PORT}`));
-
-// --- BOT DISCORDA ---
 const { Client, GatewayIntentBits } = require("discord.js");
+require("dotenv").config();
+
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
 });
 
-client.login(process.env.TOKEN);
-
-// Mapa: kanał -> treść wiadomości
-const CHANNEL_MESSAGES = {
-  "1404221189198446784": "🚧 Aktualizacja: prowadzone są prace konserwacyjne na sieci kolejowej.",
-  "1404220512712003644": "📰 Nowości: pojawiły się świeże informacje ze świata kolei.",
-  "1404221112736284732": "🚂 Ciekawostka: lokomotywy odgrywają kluczową rolę w transporcie towarowym i pasażerskim.",
-  "1404221151433064498": "🚆 Informacja: nowe połączenia pociągów regionalnych zostały uruchomione."
-};
-
 client.once("ready", () => {
-  console.log(`✅ Bot jest online jako ${client.user.tag}`);
+  console.log(`✅ Zalogowano jako ${client.user.tag}`);
+  client.user.setPresence({
+    activities: [{ name: "Kolejowy Świat 🚂", type: 0 }],
+    status: "online"
+  });
+});
 
-  // Od razu po starcie wyśle wiadomość na każdy kanał
-  for (const [channelId, message] of Object.entries(CHANNEL_MESSAGES)) {
-    const channel = client.channels.cache.get(channelId);
-    if (channel) {
-      channel.send("🤖 Bot wystartował i będzie publikował wiadomości co 10 minut!");
-    }
+// INTERWAŁ – co 10 minut różne wiadomości do różnych kanałów
+setInterval(() => {
+  // TORY I SIECI
+  const channelTory = client.channels.cache.get("1404221151433064498");
+  if (channelTory) {
+    channelTory.send(
+      "🚧 Aktualizacja torów i sieci trakcyjnej!\nSprawdź szczegóły tutaj: https://www.plk-sa.pl/dla-podroznych"
+    );
   }
 
-  // Co 10 minut wysyła przypisane wiadomości na kanały
-  setInterval(() => {
-    for (const [channelId, message] of Object.entries(CHANNEL_MESSAGES)) {
-      const channel = client.channels.cache.get(channelId);
-      if (channel) {
-        channel.send(message);
-      }
-    }
-  }, 10 * 60 * 1000);
+  // NAPRAWY I KONSERWACJE
+  const channelNaprawy = client.channels.cache.get("1404221189198446784");
+  if (channelNaprawy) {
+    channelNaprawy.send(
+      "🔧 Planowane naprawy i konserwacje – bieżący harmonogram: https://www.plk-sa.pl/utrzymanie"
+    );
+  }
+
+  // NOWOŚCI KOLEJOWE
+  const channelNowosci = client.channels.cache.get("1404220512712003644");
+  if (channelNowosci) {
+    channelNowosci.send(
+      "📰 Nowości kolejowe! Zobacz najświeższe informacje: https://kurierkolejowy.eu"
+    );
+  }
+
+  // LOKOMOTYWY I POCIĄGI
+  const channelLokomotywy = client.channels.cache.get("1404221112736284732");
+  if (channelLokomotywy) {
+    channelLokomotywy.send(
+      "🚂 Ciekawostki o lokomotywach i pociągach!\nZdjęcia i artykuły: https://kolejnapolska.pl"
+    );
+  }
+}, 10 * 60 * 1000); // co 10 minut
+
+// PROSTA KOMENDA
+client.on("messageCreate", (message) => {
+  if (message.content === "!ping") {
+    message.reply("Pong! 🚂");
+  }
 });
 
 client.login(process.env.TOKEN);
