@@ -1,101 +1,69 @@
-// index.js
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+// === Importy ===
+const { Client, GatewayIntentBits } = require("discord.js");
 const Parser = require("rss-parser");
-const fetch = require("node-fetch");
 const express = require("express");
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-app.get("/", (req, res) => res.send("Bot działa! 🚂"));
-app.listen(PORT, () => console.log(`🌍 Port nasłuchuje na ${PORT}`));
-
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
-});
-
-const parser = new Parser();
-
-// 🔑 TOKEN bota z Discorda
-const token = process.env.BOT_TOKEN;
-
-// 🔹 ID kanałów Discorda (zmień na swoje!)
-const channels = {
+// === Konfiguracja ===
+const token = "MTQwNTc3MDgwNTUzMDU5MTIzMg"; // ← tutaj wklej token swojego bota
+const channelIds = {
   tory: "1404221151433064498",
   naprawy: "1404221189198446784",
   nowosci: "1404220512712003644",
   pociagi: "1404221112736284732",
 };
 
-// 🔹 Źródła RSS
-const feeds = [
-  "https://www.rynek-kolejowy.pl/rss", 
-  "https://kurierkolejowy.eu/rss"
-];
+// Źródła RSS – można dodać więcej
+const feeds = {
+  nowosci: "https://www.rynek-kolejowy.pl/rss.xml",
+  naprawy: "https://utk.gov.pl/pl/rss/13/43",
+  tory: "https://www.plk-sa.pl/rss/aktualnosci",
+  lokomotywy: "https://kurierkolejowy.eu/rss.xml"
+};
 
-// 🔹 Pamięć wysłanych linków
-let seen = new Set();
+// === Discord client ===
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+});
 
-// ✅ Funkcja sprawdzająca, czy link działa
-async function isValidLink(url) {
-  try {
-    const res = await fetch(url, { method: "HEAD" });
-    return res.ok;
-  } catch (err) {
-    return false;
-  }
-}
+const parser = new Parser();
+let postedLinks = new Set(); // pamięta wysłane linki
 
-// ✅ Pobieranie i wysyłanie newsów
-async function fetchNews() {
-  for (let feed of feeds) {
+// === Funkcja pobierania wiadomości ===
+async function fetchAndPost() {
+  for (let [key, url] of Object.entries(feeds)) {
     try {
-      let data = await parser.parseURL(feed);
+      let feed = await parser.parseURL(url);
+      let channel = client.channels.cache.get(channelIds[key]);
 
-      for (let item of data.items.slice(0, 3)) {
-        if (seen.has(item.link)) continue;
-        seen.add(item.link);
+      if (!channel) continue;
 
-        if (!(await isValidLink(item.link))) {
-          console.log(`❌ Niedziałający link: ${item.link}`);
-          continue;
-        }
+      for (let item of feed.items.slice(0, 3)) { // tylko 3 najnowsze
+        if (postedLinks.has(item.link)) continue;
+        if (!item.link || item.link.includes("404")) continue;
 
-        // Szukanie obrazka w RSS
-        let imageUrl = null;
-        if (item.enclosure && item.enclosure.url) {
-          imageUrl = item.enclosure.url;
-        } else if (item.content && item.content.match(/<img[^>]+src="([^">]+)"/)) {
-          imageUrl = item.content.match(/<img[^>]+src="([^">]+)"/)[1];
-        }
-
-        // Tworzymy embed
-        const embed = new EmbedBuilder()
-          .setTitle(item.title)
-          .setDescription(item.contentSnippet || "Brak opisu")
-          .setURL(item.link)
-          .setColor("#2E86C1")
-          .setFooter({ text: "🚆 Kolejowy Świat - Nowości" });
-
-        if (imageUrl) embed.setImage(imageUrl);
-
-        // Wysyłamy do wszystkich kanałów
-        for (let ch of Object.values(channels)) {
-          const channel = await client.channels.fetch(ch);
-          if (channel) await channel.send({ embeds: [embed] });
-        }
+        const msg = `📰 **${item.title}**\n${item.link}`;
+        await channel.send(msg);
+        postedLinks.add(item.link);
       }
     } catch (err) {
-      console.error(`⚠️ Błąd RSS: ${feed}`, err.message);
+      console.error(`Błąd RSS (${key}):`, err.message);
     }
   }
 }
 
-// 🔹 Uruchamiamy bota
+// === Uruchamianie co 10 minut ===
+setInterval(fetchAndPost, 10 * 60 * 1000);
+
+// === Start klienta ===
 client.once("ready", () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
-  fetchNews();
-  setInterval(fetchNews, 10 * 60 * 1000); // co 10 minut
+  fetchAndPost(); // startowe pobranie
 });
 
-client.login(process.env.TOKEN);
+client.login(token);
 
+// === Express (port dla Render) ===
+const app = express();
+app.get("/", (req, res) => res.send("✅ Bot działa!"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🌐 Serwer nasłuchuje na porcie ${PORT}`));
