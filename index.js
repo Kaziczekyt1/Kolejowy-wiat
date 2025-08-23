@@ -60,7 +60,7 @@ client.once("ready", () => {
   fetchAndPost(); // startowe pobranie
 });
 
-client.login(token);
+client.login(process.env.TOKEN);
 
 // === Express (port dla Render) ===
 const app = express();
