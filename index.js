@@ -14,10 +14,10 @@ const channelIds = {
 
 // Źródła RSS – można dodać więcej
 const feeds = {
-  nowosci: "https://www.rynek-kolejowy.pl/rss.xml",
-  naprawy: "https://utk.gov.pl/pl/rss/13/43",
-  tory: "https://www.plk-sa.pl/rss/aktualnosci",
-  lokomotywy: "https://kurierkolejowy.eu/rss.xml"
+  nowosci: "https://www.rynek-kolejowy.pl",
+  naprawy: "https://utk.gov.pl/pl",
+  tory: "https://www.plk-sa.pl/o-spolce/biuro-prasowe/aktualnosci",
+  lokomotywy: "https://kurier-kolejowy.pl/transport-intermodalny"
 };
 
 // === Discord client ===
