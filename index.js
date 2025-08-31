@@ -14,10 +14,10 @@ const channelIds = {
 
 // Źródła RSS – można dodać więcej
 const feeds = {
-  nowosci: "https://www.rynek-kolejowy.pl",
-  naprawy: "https://utk.gov.pl/pl",
+  nowosci: "https://www.pkp.pl/pl/pkp-aktualnosci",
+  naprawy: "https://towarynatory.pl/aktualnosci/",
   tory: "https://www.plk-sa.pl/o-spolce/biuro-prasowe/aktualnosci",
-  lokomotywy: "https://kurier-kolejowy.pl/transport-intermodalny"
+  lokomotywy: "https://kurier-kolejowy.pl/wiadomosci"
 };
 
 // === Discord client ===
@@ -67,3 +67,4 @@ const app = express();
 app.get("/", (req, res) => res.send("✅ Bot działa!"));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌐 Serwer nasłuchuje na porcie ${PORT}`));
+
