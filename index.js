@@ -1,70 +1,67 @@
-// === Importy ===
 const { Client, GatewayIntentBits } = require("discord.js");
 const Parser = require("rss-parser");
-const express = require("express");
+const fetch = require("node-fetch");
 
-// === Konfiguracja ===
-const token = "MTQwNTc3MDgwNTUzMDU5MTIzMg"; // ← tutaj wklej token swojego bota
-const channelIds = {
-  tory: "1404221151433064498",
-  naprawy: "1404221189198446784",
-  nowosci: "1404220512712003644",
-  pociagi: "1404221112736284732",
-};
-
-// Źródła RSS – można dodać więcej
-const feeds = {
-  nowosci: "https://www.pkp.pl/pl/pkp-aktualnosci",
-  naprawy: "https://towarynatory.pl/aktualnosci/",
-  tory: "https://www.plk-sa.pl/o-spolce/biuro-prasowe/aktualnosci",
-  lokomotywy: "https://kurier-kolejowy.pl/wiadomosci"
-};
-
-// === Discord client ===
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-const parser = new Parser();
-let postedLinks = new Set(); // pamięta wysłane linki
+const token = process.env.TOKEN; // Twój token w Render
+const parser = new Parser({
+  customFields: {
+    item: ["description", "content:encoded"]
+  }
+});
 
-// === Funkcja pobierania wiadomości ===
-async function fetchAndPost() {
-  for (let [key, url] of Object.entries(feeds)) {
+// LISTA RSS
+const feeds = [
+  { url: "https://twoj-feed-naprawy.pl/rss", channelId: "ID_KANAŁU_NAPRAWY" },
+  { url: "https://twoj-feed-tory.pl/rss", channelId: "ID_KANAŁU_TORY" },
+  { url: "https://twoj-feed-lokomotywy.pl/rss", channelId: "ID_KANAŁU_LOKOMOTYWY" }
+];
+
+// Funkcja pobierająca i wysyłająca wiadomości
+async function checkFeeds() {
+  for (const feed of feeds) {
     try {
-      let feed = await parser.parseURL(url);
-      let channel = client.channels.cache.get(channelIds[key]);
+      // pobranie z nagłówkiem
+      const res = await fetch(feed.url, {
+        headers: { "User-Agent": "Mozilla/5.0 (DiscordBot)" }
+      });
 
-      if (!channel) continue;
+      if (!res.ok) {
+        console.error(`❌ Błąd pobierania RSS ${feed.url}: ${res.status}`);
+        continue; // pomiń ten feed
+      }
 
-      for (let item of feed.items.slice(0, 3)) { // tylko 3 najnowsze
-        if (postedLinks.has(item.link)) continue;
-        if (!item.link || item.link.includes("404")) continue;
+      const text = await res.text();
 
-        const msg = `📰 **${item.title}**\n${item.link}`;
-        await channel.send(msg);
-        postedLinks.add(item.link);
+      let data;
+      try {
+        data = await parser.parseString(text);
+      } catch (err) {
+        console.error(`⚠️ Błąd parsowania RSS (${feed.url}):`, err.message);
+        continue;
+      }
+
+      if (data.items?.length > 0) {
+        const channel = client.channels.cache.get(feed.channelId);
+        if (channel) {
+          const latest = data.items[0];
+          await channel.send(`📢 **Nowa informacja z RSS**\n${latest.title}\n${latest.link}`);
+        }
       }
     } catch (err) {
-      console.error(`Błąd RSS (${key}):`, err.message);
+      console.error(`❗ Problem z RSS (${feed.url}):`, err.message);
     }
   }
 }
 
-// === Uruchamianie co 10 minut ===
-setInterval(fetchAndPost, 10 * 60 * 1000);
-
-// === Start klienta ===
+// Bot online
 client.once("ready", () => {
   console.log(`✅ Zalogowano jako ${client.user.tag}`);
-  fetchAndPost(); // startowe pobranie
+  // co 5 minut sprawdzaj feedy
+  setInterval(checkFeeds, 5 * 60 * 1000);
 });
 
 client.login(process.env.TOKEN);
-
-// === Express (port dla Render) ===
-const app = express();
-app.get("/", (req, res) => res.send("✅ Bot działa!"));
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🌐 Serwer nasłuchuje na porcie ${PORT}`));
-
